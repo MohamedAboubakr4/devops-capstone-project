@@ -60,13 +60,52 @@ class TestAccountService(TestCase):
         data = resp.get_json()
         self.assertEqual(data["name"], account.name)
 
-
     def test_get_account_not_found(self):
         """It should not Read an Account that is not found"""
         resp = self.client.get(f"{BASE_URL}/0")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-    
 
+    def test_list_accounts(self):
+        """It should List all Accounts"""
+        self._create_accounts(3)  # create 3 accounts
+        resp = self.client.get(BASE_URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 3)
+
+    def test_update_account(self):
+        """It should Update an existing Account"""
+        account = self._create_accounts(1)[0]
+        account.name = "Updated Name"
+        response = self.client.put(
+            f"{BASE_URL}/{account.id}",
+            json=account.serialize(),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        updated_account = response.get_json()
+        self.assertEqual(updated_account["name"], "Updated Name")
+
+    def test_update_account_not_found(self):
+        """It should not Update an Account that is not found"""
+        resp = self.client.put(f"{BASE_URL}/0", json={"name": "New Name"})
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_account(self):
+        """It should Delete an existing Account"""
+        account = self._create_accounts(1)[0]
+        resp = self.client.delete(f"{BASE_URL}/{account.id}")
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Ensure the account has been deleted
+        resp = self.client.get(f"{BASE_URL}/{account.id}")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_account_not_found(self):
+        """It should not Delete an Account that is not found"""
+        resp = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     ######################################################################
     #  H E L P E R   M E T H O D S
