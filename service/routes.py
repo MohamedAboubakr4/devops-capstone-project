@@ -5,10 +5,13 @@ This microservice handles the lifecycle of Accounts
 """
 # pylint: disable=unused-import
 from flask import jsonify, request, make_response, abort, url_for  # noqa: F401
+from flask_cors import CORS  # Import CORS
 from service.models import Account
 from service.common import status  # HTTP Status Codes
 from . import app  # Import Flask application
 
+# Initialize CORS for the Flask app
+CORS(app)
 
 ############################################################
 # Health Endpoint
