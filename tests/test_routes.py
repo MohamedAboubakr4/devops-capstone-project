@@ -22,12 +22,12 @@ BASE_URL = "/accounts"
 HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 
 # Constants for expected status codes
-HTTP_OK = 200
-HTTP_CREATED = 201
-HTTP_BAD_REQUEST = 400
-HTTP_NOT_FOUND = 404
-HTTP_UNSUPPORTED_MEDIA_TYPE = 415
-HTTP_NO_CONTENT = 204
+HTTP_OK = status.HTTP_200_OK
+HTTP_CREATED = status.HTTP_201_CREATED
+HTTP_BAD_REQUEST = status.HTTP_400_BAD_REQUEST
+HTTP_NOT_FOUND = status.HTTP_404_NOT_FOUND
+HTTP_UNSUPPORTED_MEDIA_TYPE = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+HTTP_NO_CONTENT = status.HTTP_204_NO_CONTENT
 
 
 ######################################################################
@@ -50,10 +50,11 @@ class TestAccountService(TestCase):
     def tearDownClass(cls):
         """Runs once after test suite"""
         db.session.remove()
+        db.drop_all()  # Ensure the database is dropped after tests
 
     def setUp(self):
         """Runs before each test"""
-        db.session.query(Account).delete()  # clean up the last tests
+        db.session.query(Account).delete()  # Clean up the last tests
         db.session.commit()
         self.client = app.test_client()
 
@@ -78,7 +79,7 @@ class TestAccountService(TestCase):
 
     def test_list_accounts(self):
         """It should List all Accounts"""
-        self._create_accounts(3)  # create 3 accounts
+        self._create_accounts(3)  # Create 3 accounts
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, HTTP_OK)
         data = resp.get_json()
@@ -130,6 +131,13 @@ class TestAccountService(TestCase):
         }
         for key, value in headers.items():
             self.assertEqual(response.headers.get(key), value)
+
+    def test_cors_security(self):
+        """It should return a CORS header"""
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        self.assertEqual(response.status_code, HTTP_OK)
+        # Check for the CORS header
+        self.assertEqual(response.headers.get('Access-Control-Allow-Origin'), '*')
 
     ######################################################################
     #  H E L P E R   M E T H O D S
@@ -200,7 +208,7 @@ class TestAccountService(TestCase):
         response = self.client.post(
             BASE_URL,
             json=account.serialize(),
-            content_type="test/html"
+            content_type="text/html"  # Corrected media type
         )
         self.assertEqual(response.status_code, HTTP_UNSUPPORTED_MEDIA_TYPE)
 
